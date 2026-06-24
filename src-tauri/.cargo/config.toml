@@ -1,0 +1,11 @@
+# Per-target Rust flags.
+# On macOS we pin the deployment target to 12.0 (Monterey) so binaries built on
+# newer runners (macos-14 / ARM) still load on Intel machines running macOS 12.
+# The env var MACOSX_DEPLOYMENT_TARGET in the CI workflow reinforces this for the
+# C/linker side; this file covers the Rust compiler side.
+
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-mmacosx-version-min=12.0"]
+
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-arg=-mmacosx-version-min=12.0"]
