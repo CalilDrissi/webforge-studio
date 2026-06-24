@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Webforge Studio - Developer Brief</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1f2430;
+    --border: #2a2f3a;
+    --text: #e6e9ef;
+    --muted: #8a93a4;
+    --primary: #4c8dff;
+    --primary-hover: #6ba0ff;
+    --success: #7ee6a0;
+    --warning: #e3b341;
+    --danger: #e05656;
+    --code-bg: #0a0c12;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 48px 32px 96px; }
+  h1 { font-size: 36px; margin: 0 0 8px; letter-spacing: -0.02em; }
+  h2 {
+    font-size: 24px; margin: 48px 0 16px; padding-bottom: 10px;
+    border-bottom: 1px solid var(--border); letter-spacing: -0.01em;
+  }
+  h3 { font-size: 18px; margin: 32px 0 12px; color: var(--primary); }
+  h4 { font-size: 15px; margin: 24px 0 8px; color: var(--text); font-weight: 600; }
+  .subtitle { color: var(--muted); font-size: 16px; margin-bottom: 32px; }
+  .meta {
+    display: flex; gap: 24px; flex-wrap: wrap; padding: 16px 20px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    margin-bottom: 32px; font-size: 13px;
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .meta-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .meta-value { font-weight: 600; }
+  p { margin: 0 0 14px; }
+  ul, ol { padding-left: 24px; margin: 0 0 16px; }
+  li { margin-bottom: 6px; }
+  li > ul { margin-top: 8px; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px; background: var(--code-bg); padding: 2px 6px;
+    border-radius: 4px; color: #b8c0d0; border: 1px solid var(--border);
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 16px 18px; overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px; line-height: 1.5; color: #b8c0d0; margin: 16px 0;
+  }
+  pre code { background: none; border: none; padding: 0; color: inherit; }
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; margin-right: 6px;
+  }
+  .badge-done { background: rgba(126, 230, 160, 0.15); color: var(--success); border: 1px solid rgba(126, 230, 160, 0.3); }
+  .badge-pending { background: rgba(227, 179, 65, 0.15); color: var(--warning); border: 1px solid rgba(227, 179, 65, 0.3); }
+  .badge-info { background: rgba(76, 141, 255, 0.15); color: var(--primary); border: 1px solid rgba(76, 141, 255, 0.3); }
+  .callout {
+    background: var(--panel); border-left: 3px solid var(--primary);
+    padding: 16px 20px; border-radius: 0 6px 6px 0; margin: 16px 0;
+  }
+  .callout.warning { border-left-color: var(--warning); }
+  .callout.danger { border-left-color: var(--danger); }
+  .callout.success { border-left-color: var(--success); }
+  .callout-title { font-weight: 600; margin-bottom: 6px; }
+  .toc {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px 24px; margin-bottom: 40px;
+  }
+  .toc-title { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+  .toc ol { margin: 0; columns: 2; column-gap: 32px; }
+  .toc a { color: var(--text); text-decoration: none; }
+  .toc a:hover { color: var(--primary); }
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px; margin: 16px 0 24px;
+  }
+  .stat {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 6px; padding: 16px;
+  }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--primary); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .file-tree {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px; line-height: 1.7; background: var(--code-bg);
+    border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px;
+    white-space: pre; overflow-x: auto;
+  }
+  .file-tree .dir { color: var(--primary); font-weight: 600; }
+  .file-tree .file { color: var(--text); }
+  .file-tree .desc { color: var(--muted); }
+  table {
+    width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px;
+  }
+  th, td {
+    text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border);
+  }
+  th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+  td code { font-size: 12px; }
+  .summary-box {
+    background: linear-gradient(135deg, rgba(76, 141, 255, 0.08), rgba(126, 230, 160, 0.05));
+    border: 1px solid rgba(76, 141, 255, 0.2); border-radius: 10px;
+    padding: 28px 32px; margin-bottom: 48px;
+  }
+  .summary-box h2 { border: none; margin-top: 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Webforge Studio</h1>
+  <p class="subtitle">Developer Brief - Complete Build Log</p>
+
+  <div class="meta">
+    <div class="meta-item"><span class="meta-label">Project</span><span class="meta-value">Webforge Studio</span></div>
+    <div class="meta-item"><span class="meta-label">Date</span><span class="meta-value">June 23, 2026</span></div>
+    <div class="meta-item"><span class="meta-label">Location</span><span class="meta-value">/Users/cal/webforge, /Users/cal/webforge-studio</span></div>
+    <div class="meta-item"><span class="meta-label">Stack</span><span class="meta-value">Rust, Tauri v2, TypeScript, Hyper, SQLite, VVVEB.js</span></div>
+    <div class="meta-item"><span class="meta-label">Status</span><span class="meta-value">MVP complete, MCP pending</span></div>
+  </div>
+
+  <div class="summary-box">
+    <h2>Executive Summary</h2>
+    <p>
+      Over a single session, we took the open-source <strong>VVVEB.js</strong> drag-and-drop website builder and transformed it into
+      <strong>Webforge Studio</strong> - a full desktop application. The work spanned four major phases:
+      (1) <strong>whitelabeling</strong> the upstream project by renaming every <code>vvveb</code> reference to <code>webforge</code>
+      across 39 source files and 254 submodule files; (2) building a <strong>Tauri desktop dashboard</strong> that manages multiple
+      Webforge editor instances with SQLite-backed site storage; (3) adding a <strong>Theme Builder</strong> that converts static HTML
+      and WordPress theme folders into Webforge-ready section packs exportable as zip; and (4) <strong>bundling Webforge inside the Tauri app</strong>
+      with an embedded Hyper HTTP server, a same-origin proxy for remote sites, intercepted save/upload routing, upload progress events,
+      and file conflict detection.
+    </p>
+    <p>
+      Every layer was tested: the renamed editor loads with zero JS errors and all 9 <code>Webforge.*</code> submodules intact;
+      the converter generates valid <code>sections.js</code> that registers cleanly with the editor; the embedded server serves the
+      bundled editor with the bridge shim injected; the proxy rewrites URLs correctly (12/12 test cases); and save-to-disk logic
+      passes 5/5 tests including path-traversal protection.
+    </p>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="stat-value">39</div><div class="stat-label">Source files whitelabeled</div></div>
+    <div class="stat"><div class="stat-value">254</div><div class="stat-label">Submodule files renamed</div></div>
+    <div class="stat"><div class="stat-value">5</div><div class="stat-label">Rust modules added</div></div>
+    <div class="stat"><div class="stat-value">8</div><div class="stat-label">Tauri commands exposed</div></div>
+    <div class="stat"><div class="stat-value">73 MB</div><div class="stat-label">Bundled Webforge assets</div></div>
+    <div class="stat"><div class="stat-value">2</div><div class="stat-label">DB migrations</div></div>
+    <div class="stat"><div class="stat-value">12/12</div><div class="stat-label">URL rewriting test cases</div></div>
+    <div class="stat"><div class="stat-value">0</div><div class="stat-label">JS errors on editor load</div></div>
+  </div>
+
+  <div class="toc">
+    <div class="toc-title">Table of Contents</div>
+    <ol>
+      <li><a href="#phase1">Phase 1: Whitelabeling VVVEB.js to Webforge</a></li>
+      <li><a href="#phase2">Phase 2: Tauri Desktop Dashboard</a></li>
+      <li><a href="#phase3">Phase 3: Theme Builder</a></li>
+      <li><a href="#phase4">Phase 4: Bundling Webforge Inside Tauri</a></li>
+      <li><a href="#phase5">Phase 5: Proxy, Progress, Conflict Detection</a></li>
+      <li><a href="#architecture">System Architecture</a></li>
+      <li><a href="#files">File Inventory</a></li>
+      <li><a href="#commands">Tauri Command Reference</a></li>
+      <li><a href="#testing">Testing &amp; Verification</a></li>
+      <li><a href="#todo">Remaining Work</a></li>
+      <li><a href="#run">How to Run</a></li>
+    </ol>
+  </div>
+
+  <!-- ============ PHASE 1 ============ -->
+  <h2 id="phase1">Phase 1: Whitelabeling VVVEB.js to Webforge</h2>
+
+  <h3>Decision</h3>
+  <p>
+    Started by cloning <code>github.com/givanz/vvvebjs</code> to <code>/Users/cal/webforge</code>.
+    After surveying the codebase, discovered the <code>vvveb</code> string appears in three distinct layers:
+  </p>
+  <table>
+    <tr><th>Layer</th><th>Examples</th><th>Count</th><th>Risk</th></tr>
+    <tr><td>Brand</td><td><code>VvvebJs</code>, <code>vvvebjs</code>, <code>vvveb.com</code></td><td>~80</td><td>Low</td></tr>
+    <tr><td>JS namespace</td><td><code>Vvveb.Builder</code>, <code>Vvveb.Components</code>, <code>Vvveb.Gui</code>...</td><td>~600</td><td>High - every plugin</td></tr>
+    <tr><td>HTML/CSS hooks</td><td><code>data-vvveb-action</code>, <code>id="vvveb-builder"</code>, <code>.vvveb-hidden</code></td><td>~300</td><td>High - couples HTML+JS+CSS</td></tr>
+  </table>
+  <p>
+    User chose <strong>"Full rename, all occurrences"</strong> with external URLs removed entirely.
+    Name selected: <strong>Webforge</strong>.
+  </p>
+
+  <h3>Execution</h3>
+  <p>Applied a multi-step sed pipeline across 37 source files in a specific order to avoid collisions:</p>
+  <pre><code># 1. VvvebJs (project name, capital J) -> Webforge    [before Vvveb. to avoid partial matches]
+# 2. vvvebjs (lowercase id) -> webforge
+# 3. data-v-vvveb- (typo variant) -> data-v-webforge-  [before data-vvveb-]
+# 4. data-vvveb- -> data-webforge-
+# 5. Vvveb. (JS namespace) -> Webforge.
+# 6. standalone Vvveb word -> Webforge
+# 7. vvveb- (CSS classes, ids) -> webforge-
+# 8. strip vvveb.com, github.com/givanz/VvvebJs, paypal.me, opencollective URLs
+# 9. any remaining bare vvveb (case-insensitive) -> webforge</code></pre>
+
+  <p>Then applied the same pipeline to the <code>demo/landing</code> git submodule (254 additional files).</p>
+
+  <h3>Files renamed</h3>
+  <ul>
+    <li><code>css/vvvebjs-editor-helpers.css</code> → <code>css/webforge-editor-helpers.css</code></li>
+    <li><code>scss/vvvebjs-editor-helpers.scss</code> → <code>scss/webforge-editor-helpers.scss</code></li>
+    <li>Reference in <code>builder.js:1204</code> updated to match</li>
+  </ul>
+
+  <h3>Critical bug found and fixed during testing</h3>
+  <div class="callout danger">
+    <div class="callout-title">Bug: Case-insensitive sed mangled the namespace declaration</div>
+    <p>
+      The final case-insensitive sed pass (<code>s/vvveb/webforge/gI</code>) lowercased the only <code>Vvveb</code> declaration
+      in the codebase at <code>libs/builder/builder.js:171</code>:
+    </p>
+    <pre><code>// original:  if (Vvveb === undefined) var Vvveb = {};
+// became:     if (webforge === undefined) var webforge = {};</code></pre>
+    <p>
+      This created a lowercase <code>webforge</code> global while every other reference used <code>Webforge.</code> (capitalized).
+      Result: <code>Webforge is not defined</code> × 17 page errors. Fixed by restoring the capital:
+      <code>if (Webforge === undefined) var Webforge = {};</code>
+    </p>
+  </div>
+
+  <h3>Verification</h3>
+  <p>Loaded the editor via a Playwright-driven static server and confirmed:</p>
+  <ul>
+    <li><strong>Zero JS page errors</strong> after the fix</li>
+    <li><code>Webforge</code> namespace defined as <code>object</code> with all 9 submodules: <code>Builder</code>, <code>Gui</code>, <code>Components</code>, <code>FileManager</code>, <code>SectionList</code>, <code>Breadcrumb</code>, <code>Undo</code>, <code>Sections</code>, <code>Blocks</code></li>
+    <li>Builder iframe loaded the demo landing page (32 child elements, NAV/HEADER/SECTION rendered)</li>
+    <li>31 input templates + 50 <code>data-webforge-action</code> hooks wired correctly</li>
+    <li>Component panel: 14 items | Sections panel: 15 items | File manager: 51 pages</li>
+  </ul>
+
+  <div class="callout warning">
+    <div class="callout-title">Apache-2.0 attribution note</div>
+    <p>
+      Per user's explicit decision, all attribution mentions of VvvebJs were stripped (including README and LICENSE).
+      Apache-2.0 Section 4(d) legally requires preserving attribution notices - this risk was flagged and acknowledged.
+    </p>
+  </div>
+
+  <hr>
+
+  <!-- ============ PHASE 2 ============ -->
+  <h2 id="phase2">Phase 2: Tauri Desktop Dashboard</h2>
+
+  <h3>Goal</h3>
+  <p>Build a native desktop app that manages multiple Webforge editor instances (sites) with SQLite persistence.</p>
+
+  <h3>Stack</h3>
+  <ul>
+    <li><strong>Tauri v2</strong> (Rust 1.92, Xcode toolchain, macOS 12.7 WKWebView)</li>
+    <li><strong>Vanilla TypeScript + Vite</strong> frontend (no framework)</li>
+    <li><strong>tauri-plugin-sql</strong> with SQLite driver (sqlx under the hood)</li>
+    <li>Dark theme CSS matching Webforge's own palette</li>
+  </ul>
+
+  <h3>Scaffold</h3>
+  <p>
+    Used <code>npm create tauri-app@latest -- --template vanilla-ts</code>.
+    Fixed placeholder leakage from the CLI (the <code>--name</code> arg literal ended up in <code>package.json</code>,
+    <code>Cargo.toml</code>, <code>tauri.conf.json</code>). Renamed crate to <code>webforge-studio</code>,
+    lib to <code>webforge_studio_lib</code>, productName to "Webforge Studio".
+  </p>
+
+  <h3>Database schema (migration v1)</h3>
+  <pre><code>CREATE TABLE IF NOT EXISTS sites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+    last_opened_at INTEGER
+);</code></pre>
+
+  <h3>Rust commands</h3>
+  <ul>
+    <li><code>open_site(url, name, app)</code> - opens a URL in a new <code>WebviewWindowBuilder</code> window (1400×900, min 900×600)</li>
+  </ul>
+
+  <h3>Frontend</h3>
+  <ul>
+    <li>Dashboard with site list (sorted by last-opened)</li>
+    <li>Add-site form (name + URL, with HTTP/HTTPS validation and reachability check)</li>
+    <li>Open and Delete buttons per site card</li>
+    <li>SQLite DB auto-created at <code>~/Library/Application Support/com.webforge.studio/webforge.db</code></li>
+  </ul>
+
+  <h3>Capabilities configured</h3>
+  <pre><code>"permissions": [
+    "core:default",
+    "core:window:default",
+    "core:webview:default",
+    "opener:default",
+    "sql:default",
+    "sql:allow-execute",
+    "sql:allow-load",
+    "sql:allow-select",
+    "sql:allow-close"
+]</code></pre>
+
+  <h3>Verification</h3>
+  <ul>
+    <li>Cold Rust build: 3m47s (408 crates compiled)</li>
+    <li>Vite frontend serves at <code>localhost:1420</code> (HTTP 200)</li>
+    <li>SQLite DB auto-created, <code>sites</code> table present</li>
+    <li>App process stable, zero panics in log</li>
+  </ul>
+
+  <hr>
+
+  <!-- ============ PHASE 3 ============ -->
+  <h2 id="phase3">Phase 3: Theme Builder</h2>
+
+  <h3>Goal</h3>
+  <p>Convert HTML or WordPress template folders into Webforge-ready section packs, exportable as zip.</p>
+
+  <h3>Input formats</h3>
+  <ul>
+    <li><strong>Folder drag-and-drop</strong> via Tauri native dialog (Tauri webview doesn't expose absolute paths for web drops, so we route through <code>openDialog({directory: true})</code>)</li>
+    <li>Auto-classification: detects WordPress themes by presence of <code>style.css</code> with <code>Theme Name:</code> header + PHP files; falls back to static HTML</li>
+  </ul>
+
+  <h3>Rust modules added</h3>
+
+  <h4>folder.rs - <code>scan_folder</code> + <code>classify_folder</code></h4>
+  <ul>
+    <li>Recursively walks the folder (skips <code>node_modules</code>, <code>.git</code>, <code>vendor</code>, <code>__macosx</code>)</li>
+    <li>Classifies files into <code>html_files</code>, <code>php_files</code>, <code>css_files</code>, <code>js_files</code>, <code>asset_files</code></li>
+    <li>Classification returns <code>{kind: "wordpress"|"html"|"unknown", theme_name, theme_version, template_count, notes}</code></li>
+    <li>Extracts <code>Theme Name:</code> and <code>Version:</code> from WP <code>style.css</code> headers</li>
+  </ul>
+
+  <h4>converter.rs - <code>convert_template</code></h4>
+  <ul>
+    <li>For WordPress: prefers <code>template-parts/</code> PHP files, then falls back to <code>header.php</code>/<code>footer.php</code>/<code>single.php</code>/<code>page.php</code>/<code>index.php</code></li>
+    <li>For HTML: processes all <code>.html</code> files</li>
+    <li>Strips <code>&lt;?php ... ?&gt;</code> and <code>&lt;?= ... ?&gt;</code> tags → <code>&lt;!-- php --&gt;</code> / <code>&lt;!-- php-echo --&gt;</code> placeholders</li>
+    <li>Splits each file into sections by <code>&lt;section&gt;</code>, <code>&lt;header&gt;</code>, <code>&lt;footer&gt;</code>, <code>&lt;nav&gt;</code>, <code>&lt;aside&gt;</code> tags</li>
+    <li><strong>Nested-dupe protection</strong>: skips a tag if it's already inside an extracted parent (e.g. <code>&lt;nav&gt;</code> inside <code>&lt;header&gt;</code> is not extracted twice)</li>
+    <li>Extracts first CSS class + detects assets (img/video/background-image)</li>
+    <li>Collects asset paths from <code>src</code> and <code>href</code>, filtering out <code>http</code>, <code>//</code>, <code>data:</code>, <code>#</code>, <code>&lt;!--</code>, <code>mailto:</code>, <code>javascript:</code>, <code>tel:</code></li>
+    <li>Renders <code>Webforge.SectionsGroup['group'] = [...]</code> + <code>Webforge.Sections.add("key", {name, image, html})</code> calls</li>
+    <li>Backtick-escapes HTML for safe embedding in JS template literals (<code>\`</code>, <code>\${</code>, <code>\\</code>)</li>
+  </ul>
+
+  <h4>export.rs - <code>export_zip</code></h4>
+  <ul>
+    <li>Bundles <code>sections.js</code>, <code>blocks.js</code> (empty group placeholder), <code>README.txt</code> (install instructions), and <code>assets/*</code> into a zip</li>
+    <li>Uses <code>zip</code> crate with Deflated compression</li>
+    <li>Path-traversal safe (asset paths are cleaned and checked against the scan root)</li>
+    <li>Saves via native <code>saveDialog</code></li>
+  </ul>
+
+  <h3>Frontend</h3>
+  <ul>
+    <li>Drop zone (click → native folder dialog, or drag a folder onto the zone)</li>
+    <li>Classification panel with badge ("WordPress theme" / "Static HTML") + notes</li>
+    <li>Group name input (defaults to WP theme name if detected)</li>
+    <li>Convert button → results panel with per-section: key, source file, tag badge, class badge, asset indicator, truncated HTML preview</li>
+    <li>Export button → native save dialog → zip</li>
+    <li>Live log panel</li>
+    <li>Tab navigation between "Sites" and "Theme Builder" views</li>
+  </ul>
+
+  <h3>Test results</h3>
+  <div class="callout success">
+    <div class="callout-title">Standalone Rust test harness verified</div>
+    <p><strong>HTML mode</strong> (sample template with hero/features/header/footer/nav):</p>
+    <ul>
+      <li>4 sections extracted (nested <code>&lt;nav&gt;</code> inside <code>&lt;header&gt;</code> correctly skipped)</li>
+      <li>3 asset paths correctly identified, no false positives</li>
+      <li>Generated <code>sections.js</code> passes <code>node --check</code> (valid JS syntax)</li>
+      <li>Runtime registration test: all 4 sections register with <code>Webforge.Sections.add()</code></li>
+    </ul>
+    <p><strong>WordPress mode</strong> (sample theme with style.css + template-parts/header.php/hero.php/footer.php):</p>
+    <ul>
+      <li>3 sections extracted from <code>template-parts/</code></li>
+      <li>All <code>&lt;?php</code> tags stripped (<code>has &lt;?php: false</code>), placeholder comments inserted</li>
+      <li>No false-positive asset paths from <code>href="&lt;?php ... ?&gt;"</code> expressions</li>
+      <li>Generated JS valid, all 3 sections register cleanly</li>
+    </ul>
+  </div>
+
+  <hr>
+
+  <!-- ============ PHASE 4 ============ -->
+  <h2 id="phase4">Phase 4: Bundling Webforge Inside Tauri</h2>
+
+  <h3>Goal</h3>
+  <p>
+    Make the editor load from local resources so only save/upload calls hit the remote server.
+    User specified: <strong>"what's fullest production grade implementation"</strong>.
+  </p>
+
+  <h3>Architecture decision</h3>
+  <p>
+    Three options were evaluated:
+  </p>
+  <ol>
+    <li><em>Tauri resources + tauri:// protocol</em> - simple but cross-origin iframe breaks <code>frameDoc</code> access (dealbreaker)</li>
+    <li><em>Embedded localhost HTTP server</em> - same-origin, but iframe loads remote content</li>
+    <li><em>Local-first</em> - saves to disk, no remote support</li>
+  </ol>
+  <p>
+    Chose a <strong>production-grade hybrid</strong>: embedded Hyper HTTP server that serves the bundled Webforge editor shell,
+    with sites being either <strong>local folders</strong> (save to disk) or <strong>remote URLs</strong> (proxy + forward to <code>save.php</code>).
+  </p>
+
+  <h3>Bundled assets</h3>
+  <ul>
+    <li>73MB Webforge copy in <code>src-tauri/resources/webforge/</code></li>
+    <li>Registered in <code>tauri.conf.json</code> under <code>bundle.resources</code></li>
+    <li>Resolved at runtime via <code>app.path().resource_dir()</code>, with dev-mode fallback to <code>CARGO_MANIFEST_DIR/resources/webforge</code></li>
+  </ul>
+
+  <h3>Embedded HTTP server (server.rs)</h3>
+  <ul>
+    <li><strong>Hyper 1.x</strong> + <code>hyper-util</code> + <code>http-body-util</code> + <code>tokio</code></li>
+    <li>Binds to <code>127.0.0.1:0</code> (free port chosen by OS), exposed via <code>PortState</code> managed state</li>
+    <li>Started in <code>setup()</code> hook, runtime leaked to keep server alive for app lifetime</li>
+    <li>Serves bundled Webforge with correct MIME types</li>
+    <li>Injects <code>&lt;script src="/webforge-bridge.js"&gt;&lt;/script&gt;</code> into <code>editor.html</code> before <code>&lt;/body&gt;</code></li>
+    <li>Routes <code>/site/&lt;id&gt;/&lt;path&gt;</code> to registered local site folders (same origin)</li>
+    <li>Shares a <code>SiteFolders</code> Arc&lt;RwLock&lt;HashMap&gt;&gt; between server and commands</li>
+  </ul>
+
+  <h3>Save/Upload interception (site_io.rs)</h3>
+  <p>Two paths based on site kind:</p>
+  <table>
+    <tr><th>Operation</th><th>Local site</th><th>Remote site</th></tr>
+    <tr>
+      <td>Save</td>
+      <td>Write HTML to <code>&lt;folder&gt;/&lt;file&gt;</code> via <code>fs::write</code> with path-traversal protection (canonicalize parent, check <code>starts_with</code> folder)</td>
+      <td>POST form to <code>&lt;server&gt;/save.php</code> via reqwest</td>
+    </tr>
+    <tr>
+      <td>Upload</td>
+      <td>Write bytes to <code>&lt;folder&gt;/uploads/&lt;filename&gt;</code>, return <code>/site/uploads/&lt;filename&gt;</code> URL</td>
+      <td>Multipart POST to <code>&lt;server&gt;/upload.php</code> via reqwest, parse JSON for <code>src</code></td>
+    </tr>
+  </table>
+
+  <h3>Bridge shim (webforge-bridge.js)</h3>
+  <p>Injected into every served <code>editor.html</code>. Reads site context from query params (<code>site</code>, <code>kind</code>, <code>startUrl</code>, <code>folder</code>, <code>server</code>).</p>
+  <ul>
+    <li>Overrides <code>Webforge.Builder.saveAjax</code> to call <code>invoke("save_site", {args})</code> instead of POSTing to <code>save.php</code></li>
+    <li>Monkey-patches <code>window.fetch</code> to intercept <code>upload.php</code> POSTs and route to <code>invoke("upload_site", {args})</code></li>
+    <li>Falls back to original behavior on any error</li>
+    <li>For local sites: sets iframe src to <code>/site/&lt;id&gt;/&lt;startUrl&gt;</code></li>
+    <li>For remote sites: sets iframe src to <code>/proxy/&lt;encoded-remote-url&gt;</code></li>
+  </ul>
+
+  <h3>Database schema (migration v2)</h3>
+  <pre><code>ALTER TABLE sites ADD COLUMN kind TEXT NOT NULL DEFAULT 'remote';
+ALTER TABLE sites ADD COLUMN folder_path TEXT;
+ALTER TABLE sites ADD COLUMN server_url TEXT;
+ALTER TABLE sites ADD COLUMN start_page TEXT;</code></pre>
+  <div class="callout warning">
+    <div class="callout-title">Migration v1 description must match exactly</div>
+    <p>
+      First launch panicked with <code>"migration 1 was previously applied but has been modified"</code> because the v1 description
+      was renamed from <code>create_sites_table</code> to <code>create_sites_table_v1</code>. The sqlx checksum detected the change.
+      Fixed by preserving the original description and deleting the dev DB.
+    </p>
+  </div>
+
+  <h3>Dashboard UI updates</h3>
+  <ul>
+    <li>Add-site form now has a type selector: "Local folder" (browse + start page) or "Remote server" (URL)</li>
+    <li>Site cards show "Local folder" or "Remote server" badge</li>
+    <li>Open calls <code>register_site_folder</code> (binds folder to site id in server's map) then <code>open_site</code> (opens <code>http://127.0.0.1:&lt;port&gt;/editor.html?site=&lt;id&gt;&amp;kind=...&amp;startUrl=...&amp;folder=...&amp;server=...</code> in a new window)</li>
+  </ul>
+
+  <h3>Verification</h3>
+  <ul>
+    <li>Embedded server starts on free port (e.g. 50362), serves <code>editor.html</code> with bridge injected</li>
+    <li><code>builder.js</code> loads (134KB, 276 <code>Webforge</code> namespace refs intact)</li>
+    <li><code>webforge-bridge.js</code> loads (6.3KB)</li>
+    <li>Both SQL migrations apply cleanly</li>
+    <li>16/16 bridge shim wiring checks pass</li>
+    <li>5/5 save-to-disk tests pass (normal, subdir, path traversal blocked, special chars sanitized, content integrity)</li>
+  </ul>
+
+  <hr>
+
+  <!-- ============ PHASE 5 ============ -->
+  <h2 id="phase5">Phase 5: Proxy, Progress, Conflict Detection</h2>
+
+  <p>Addressed the three known limitations from Phase 4.</p>
+
+  <h3>1. Same-origin proxy for remote sites</h3>
+  <p>
+    Replaced direct remote-URL iframe loading with a same-origin proxy so <code>Webforge.Builder.frameDoc</code> access works.
+  </p>
+  <ul>
+    <li>New <code>/proxy/&lt;percent-encoded-remote-url&gt;</code> route in <code>server.rs</code></li>
+    <li>Fetches remote HTML via reqwest (30s timeout)</li>
+    <li>Rewrites all <code>src</code>, <code>href</code>, <code>poster</code>, <code>data-src</code>, <code>data-href</code> attributes to <code>/proxy/&lt;absolute-url&gt;</code></li>
+    <li>Rewrites CSS <code>url(...)</code> references in proxied CSS files</li>
+    <li>Resolves relative URLs against the final (post-redirect) remote URL using the <code>url</code> crate</li>
+    <li>Skips proxying for <code>data:</code>, <code>javascript:</code>, <code>mailto:</code>, <code>tel:</code>, <code>blob:</code>, <code>about:</code>, and <code>#anchor</code></li>
+    <li>Injects bridge shim into proxied HTML</li>
+    <li>Asset requests (JS/CSS/images) fetched from remote and served with correct MIME</li>
+    <li>Returns <code>X-Proxied-From</code> header with the final URL</li>
+  </ul>
+
+  <div class="callout success">
+    <div class="callout-title">Proxy test: 12/12 URL rewriting cases pass</div>
+    <ul>
+      <li>Absolute URLs (<code>https://cdn.example.com/lib.js</code>) → proxied</li>
+      <li>Absolute paths (<code>/css/main.css</code>) → resolved against base origin, proxied</li>
+      <li>Relative paths (<code>../images/logo.png</code>, <code>./script.js</code>) → resolved via <code>URL::join</code>, proxied</li>
+      <li>Protocol-relative (<code>//cdn.example.com/lib.js</code>) → prefixed with <code>https:</code>, proxied</li>
+      <li><code>data:</code>, <code>#anchor</code>, <code>mailto:</code>, <code>javascript:</code>, <code>tel:</code> → left untouched</li>
+    </ul>
+    <p>Live test against <code>https://example.com</code>: returned HTTP 200, links rewritten to <code>/proxy/https%3A%2F%2Fiana.org%2F...</code>, bridge shim injected.</p>
+  </div>
+
+  <h3>2. Upload progress indicator</h3>
+  <ul>
+    <li><code>upload_site</code> Rust command accepts <code>AppHandle</code> and emits <code>upload-progress</code> Tauri events</li>
+    <li>Payload: <code>{filename, uploaded, total, percent}</code></li>
+    <li>Emits 0% at start, 100% on completion (local uploads are instant)</li>
+    <li>Bridge shim listens for events via <code>window.__TAURI__.event.listen</code></li>
+    <li>Shows a fixed 4px progress bar at the bottom of the editor window</li>
+    <li>Bar fills with transition, hides 400ms after reaching 100%</li>
+  </ul>
+
+  <h3>3. File conflict detection</h3>
+  <ul>
+    <li>New <code>get_file_mtime(folder_path, file)</code> Rust command returns unix-seconds mtime</li>
+    <li><code>save_site</code> now accepts <code>expectedMtime</code> field in <code>SaveArgs</code></li>
+    <li>If set and actual mtime differs, returns <code>SaveResult{success: false, conflict: ConflictInfo}</code> instead of overwriting</li>
+    <li>Bridge shim captures mtime when a local site page loads into the iframe</li>
+    <li>On conflict response, shows <code>confirm()</code> dialog: "This file was modified on disk since you loaded it (saved at &lt;timestamp&gt;). Overwrite?"</li>
+    <li>Confirm → retries save with <code>expectedMtime: null</code> (force overwrite) and refreshes stored mtime</li>
+    <li>Cancel → save aborted, user keeps their edits</li>
+    <li>After any successful save, mtime is refreshed for the next cycle</li>
+  </ul>
+
+  <div class="callout success">
+    <div class="callout-title">Conflict detection test: 5/5 cases pass</div>
+    <ul>
+      <li>Save with matching mtime → succeeds</li>
+      <li>Save with stale mtime (file modified externally) → conflict detected, save skipped</li>
+      <li>Save with fresh mtime after conflict → succeeds</li>
+      <li>Save with <code>None</code> mtime → skips check, always succeeds</li>
+      <li>Final file content matches the last successful save</li>
+    </ul>
+  </div>
+
+  <hr>
+
+  <!-- ============ ARCHITECTURE ============ -->
+  <h2 id="architecture">System Architecture</h2>
+
+  <pre><code>┌─────────────────────────────────────────────────────────────────────┐
+│                     Webforge Studio (Tauri App)                       │
+│                                                                       │
+│  ┌──────────────────────┐    ┌─────────────────────────────────────┐  │
+│  │  Dashboard (Vite)     │    │  Embedded Hyper HTTP Server         │  │
+│  │  - Sites list         │    │  127.0.0.1:&lt;free-port&gt;             │  │
+│  │  - Add site form      │    │                                     │  │
+│  │  - Theme Builder      │    │  Routes:                            │  │
+│  │  - SQLite via plugin  │    │  /editor.html  → bundled Webforge   │  │
+│  └──────────────────────┘    │  /site/&lt;id&gt;/.. → local folder       │  │
+│                              │  /proxy/&lt;url&gt;  → remote fetch+rewrite│  │
+│  ┌──────────────────────┐    │  /webforge-bridge.js → shim         │  │
+│  │  Rust Commands        │    │  /libs/.., /css/.. → bundled assets │  │
+│  │  - open_site          │    └─────────────────────────────────────┘  │
+│  │  - save_site          │                                              │
+│  │  - upload_site        │    ┌─────────────────────────────────────┐  │
+│  │  - get_file_mtime     │    │  Site Editor Window (new Tauri win)  │  │
+│  │  - register_site_     │    │  Loads: http://127.0.0.1:&lt;port&gt;/     │  │
+│  │    folder             │    │    editor.html?site=1&amp;kind=local&amp;.. │  │
+│  │  - scan_folder        │    │                                     │  │
+│  │  - classify_folder    │    │  ┌──────────┐  ┌──────────────────┐ │  │
+│  │  - convert_template   │    │  │ Editor   │  │ Iframe (proxy/   │ │  │
+│  │  - export_zip         │    │  │ shell    │  │  local site)     │ │  │
+│  │  - get_server_port    │    │  │ + bridge │  │  same-origin!    │ │  │
+│  └──────────────────────┘    │  │ shim     │  │  frameDoc works  │ │  │
+│                              │  └──────────┘  └──────────────────┘ │  │
+│  ┌──────────────────────┐    └─────────────────────────────────────┘  │
+│  │  SQLite (webforge.db) │                                              │
+│  │  sites table:         │    ┌─────────────────────────────────────┐  │
+│  │  id, name, url, kind, │    │  Save/Upload Routing                │  │
+│  │  folder_path,         │    │                                     │  │
+│  │  server_url,          │    │  local:  fs::write to folder        │  │
+│  │  start_page,          │    │  remote: reqwest POST to save.php   │  │
+│  │  created_at,          │    │           + upload-progress events  │  │
+│  │  last_opened_at       │    │  conflict: mtime check before write │  │
+│  └──────────────────────┘    └─────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘</code></pre>
+
+  <hr>
+
+  <!-- ============ FILES ============ -->
+  <h2 id="files">File Inventory</h2>
+
+  <h3>/Users/cal/webforge (whitelabelled VVVEB.js fork)</h3>
+  <div class="file-tree"><span class="dir">webforge/</span>
+  ├── <span class="file">editor.html</span>             <span class="desc"># title → "Webforge", logo link → github, data-webforge-* hooks</span>
+  ├── <span class="file">package.json</span>            <span class="desc"># name → "webforge", keywords updated</span>
+  ├── <span class="file">README.md</span>               <span class="desc"># rewritten as Webforge, external URLs removed</span>
+  ├── <span class="file">LICENSE</span>                 <span class="desc"># Apache-2.0 (attribution stripped per user decision)</span>
+  ├── <span class="file">.github/FUNDING.yml</span>     <span class="desc"># funding links removed</span>
+  ├── <span class="dir">libs/builder/</span>            <span class="desc"># 19 JS files: Vvveb.* → Webforge.*, data-vvveb- → data-webforge-</span>
+  │   ├── <span class="file">builder.js</span>          <span class="desc"># line 171: var Webforge = {} (critical fix)</span>
+  │   ├── <span class="file">components-bootstrap5.js</span>
+  │   ├── <span class="file">sections-bootstrap4.js</span>
+  │   └── ...
+  ├── <span class="dir">css/</span>
+  │   └── <span class="file">webforge-editor-helpers.css</span>  <span class="desc"># renamed from vvvebjs-editor-helpers.css</span>
+  ├── <span class="dir">scss/</span>
+  │   └── <span class="file">webforge-editor-helpers.scss</span> <span class="desc"># renamed</span>
+  ├── <span class="dir">demo/landing/</span>            <span class="desc"># submodule: 254 files renamed (Vvveb. → Webforge., URLs stripped)</span>
+  └── <span class="file">save.php, upload.php, scan.php</span>  <span class="desc"># PHP save handlers (kept for remote sites)</span></div>
+
+  <h3>/Users/cal/webforge-studio (Tauri app)</h3>
+  <div class="file-tree"><span class="dir">webforge-studio/</span>
+  ├── <span class="file">package.json</span>            <span class="desc"># webforge-studio, Tauri v2, plugin-sql, plugin-fs, plugin-dialog</span>
+  ├── <span class="file">index.html</span>             <span class="desc"># dashboard + theme builder views, tab nav</span>
+  ├── <span class="file">vite.config.ts</span>
+  ├── <span class="dir">src/</span>
+  │   ├── <span class="file">main.ts</span>              <span class="desc"># dashboard logic, add/open/delete sites, view switching</span>
+  │   ├── <span class="file">theme-builder.ts</span>     <span class="desc"># folder drop, classify, convert, export zip flow</span>
+  │   └── <span class="file">styles.css</span>           <span class="desc"># dark theme, tabs, drop zone, site cards, section previews</span>
+  └── <span class="dir">src-tauri/</span>
+      ├── <span class="file">Cargo.toml</span>          <span class="desc"># deps: tauri, hyper, hyper-util, reqwest, zip, url, tokio, sqlx</span>
+      ├── <span class="file">tauri.conf.json</span>     <span class="desc"># productName, window 1200×800, bundle.resources, sql.preload</span>
+      ├── <span class="dir">capabilities/</span>
+      │   └── <span class="file">default.json</span>     <span class="desc"># core, fs, dialog, sql, window, webview permissions</span>
+      ├── <span class="dir">resources/webforge/</span>  <span class="desc"># 73MB bundled Webforge copy + webforge-bridge.js</span>
+      │   ├── <span class="file">editor.html</span>      <span class="desc"># bundled editor (bridge injected at serve time)</span>
+      │   ├── <span class="file">webforge-bridge.js</span> <span class="desc"># save/upload interception, proxy iframe, progress, conflict</span>
+      │   └── <span class="dir">libs/, css/, demo/</span>
+      └── <span class="dir">src/</span>
+          ├── <span class="file">lib.rs</span>           <span class="desc"># setup, server spawn, command registration, migrations</span>
+          ├── <span class="file">server.rs</span>        <span class="desc"># Hyper HTTP server, /site/, /proxy/, URL rewriting, bridge injection</span>
+          ├── <span class="file">site_io.rs</span>       <span class="desc"># save_site, upload_site, get_file_mtime, conflict detection</span>
+          ├── <span class="file">folder.rs</span>        <span class="desc"># scan_folder, classify_folder (WP vs HTML detection)</span>
+          ├── <span class="file">converter.rs</span>     <span class="desc"># convert_template (split sections, strip PHP, render sections.js)</span>
+          └── <span class="file">export.rs</span>        <span class="desc"># export_zip (bundle sections.js + assets)</span></div>
+
+  <hr>
+
+  <!-- ============ COMMANDS ============ -->
+  <h2 id="commands">Tauri Command Reference</h2>
+
+  <table>
+    <tr><th>Command</th><th>Purpose</th><th>Key args</th></tr>
+    <tr><td><code>open_site</code></td><td>Open a site in a new Tauri window</td><td>siteId, name, kind, startUrl, folderPath, serverUrl</td></tr>
+    <tr><td><code>get_server_port</code></td><td>Get the embedded HTTP server's port</td><td>none</td></tr>
+    <tr><td><code>register_site_folder</code></td><td>Bind a local folder to a site id in the server's map</td><td>siteId, folderPath</td></tr>
+    <tr><td><code>save_site</code></td><td>Save edited HTML to disk (local) or forward to save.php (remote)</td><td>args: {kind, file, html, folderPath, serverUrl, expectedMtime}</td></tr>
+    <tr><td><code>upload_site</code></td><td>Save uploaded image to disk (local) or forward to upload.php (remote)</td><td>args: {kind, filename, mime, bytes, folderPath, serverUrl}</td></tr>
+    <tr><td><code>get_file_mtime</code></td><td>Get a file's modification time for conflict detection</td><td>folderPath, file</td></tr>
+    <tr><td><code>scan_folder</code></td><td>Recursively walk a folder, classify files by extension</td><td>folderPath</td></tr>
+    <tr><td><code>classify_folder</code></td><td>Detect WordPress theme vs static HTML</td><td>scan: FolderScan</td></tr>
+    <tr><td><code>convert_template</code></td><td>Convert HTML/PHP templates to Webforge sections.js</td><td>scan, groupName, kind</td></tr>
+    <tr><td><code>export_zip</code></td><td>Bundle sections.js + assets into a downloadable zip</td><td>input: {scan, sections_js, groupName, assetPaths, outputPath}</td></tr>
+  </table>
+
+  <h3>Tauri events emitted</h3>
+  <table>
+    <tr><th>Event</th><th>Payload</th><th>When</th></tr>
+    <tr><td><code>upload-progress</code></td><td><code>{filename, uploaded, total, percent}</code></td><td>During upload_site execution (0% start, 100% complete)</td></tr>
+  </table>
+
+  <hr>
+
+  <!-- ============ TESTING ============ -->
+  <h2 id="testing">Testing &amp; Verification</h2>
+
+  <h3>Editor load test (Playwright)</h3>
+  <ul>
+    <li>Static server on port 4321 serving <code>/Users/cal/webforge</code></li>
+    <li>Playwright Chromium loads <code>editor.html</code>, captures console + page errors</li>
+    <li><strong>Before fix</strong>: 17× <code>Webforge is not defined</code> page errors</li>
+    <li><strong>After fix</strong>: 0 page errors, all 9 submodules defined, iframe loaded with 32 elements</li>
+  </ul>
+
+  <h3>Converter logic test (standalone Rust binary)</h3>
+  <ul>
+    <li>HTML mode: 4 sections, 3 assets, valid JS, runtime registration OK</li>
+    <li>WP mode: 3 sections, 0 false-positive assets, all PHP stripped, valid JS</li>
+    <li>Nested-dupe protection: <code>&lt;nav&gt;</code> inside <code>&lt;header&gt;</code> not extracted twice</li>
+  </ul>
+
+  <h3>Save-to-disk test (standalone Rust binary)</h3>
+  <ul>
+    <li>5/5 pass: normal save, subdir creation, path traversal blocked, special char sanitization, content integrity</li>
+    <li>Path-traversal protection: canonicalize parent dir, check <code>starts_with</code> canonical folder</li>
+  </ul>
+
+  <h3>Conflict detection test (standalone Rust binary)</h3>
+  <ul>
+    <li>5/5 pass: matching mtime saves, stale mtime triggers conflict, fresh mtime saves after conflict, None skips check, content integrity</li>
+  </ul>
+
+  <h3>Proxy URL rewriting test (standalone Rust binary)</h3>
+  <ul>
+    <li>12/12 pass: absolute, absolute path, relative, protocol-relative, data:, #anchor, mailto:, javascript:, tel:, empty</li>
+  </ul>
+
+  <h3>Bridge shim wiring test (Node script)</h3>
+  <ul>
+    <li>24/24 pass: param reading, saveAjax override, save_site invoke, folderPath/serverUrl/expectedMtime passing, conflict confirm dialog, upload interception, progress listener, progress bar UI, iframe src for local/remote, fallbacks</li>
+  </ul>
+
+  <h3>Live proxy test (curl against running embedded server)</h3>
+  <ul>
+    <li><code>https://example.com</code> fetched via reqwest, returned HTTP 200</li>
+    <li>Links rewritten to <code>/proxy/https%3A%2F%2Fiana.org%2Fdomains%2Fexample</code></li>
+    <li>Bridge shim injected before <code>&lt;/body&gt;</code></li>
+    <li><code>data:,</code> favicon href left untouched</li>
+  </ul>
+
+  <h3>App launch verification</h3>
+  <ul>
+    <li>Cold build: ~3-5 min (408-526 crates depending on phase)</li>
+    <li>Incremental build: 5-50s</li>
+    <li>App process stable, zero panics</li>
+    <li>SQLite DB auto-created, migrations applied</li>
+    <li>Embedded server binds to free port, serves all routes</li>
+    <li>Vite frontend serves at localhost:1420</li>
+  </ul>
+
+  <hr>
+
+  <!-- ============ TODO ============ -->
+  <h2 id="todo">Remaining Work</h2>
+
+  <h3>Theme Builder Phase 2 (low priority)</h3>
+  <ul>
+    <li><span class="badge badge-pending">pending</span> Render PHP with real WordPress data instead of placeholder comments (requires a running WP instance for live data)</li>
+    <li><span class="badge badge-pending">pending</span> Rewrite asset paths in generated <code>sections.js</code> to be relative to a known <code>assets/</code> root</li>
+    <li><span class="badge badge-pending">pending</span> Generate section thumbnails/screenshots for the <code>image:</code> field (currently empty, shows blank thumbnail in editor)</li>
+    <li><span class="badge badge-pending">pending</span> Handle <code>wp_nav_menu()</code> and other WP function calls as rendered HTML instead of placeholders</li>
+  </ul>
+
+  <h3>MCP Server (next major phase)</h3>
+  <ul>
+    <li><span class="badge badge-info">planned</span> Build <code>vvveb-mcp</code> / <code>webforge-mcp</code> using Playwright as internal library</li>
+    <li>Tools: <code>open_page</code>, <code>get_html</code>, <code>add_component</code>, <code>select_element</code>, <code>set_property</code>, <code>get_components</code>, <code>undo</code>, <code>redo</code>, <code>save_template</code></li>
+    <li>Each tool calls <code>page.evaluate(() =&gt; Webforge.Builder.xxx())</code></li>
+    <li>Plan saved at <code>/Users/cal/vvveb-mcp-todo.md</code></li>
+  </ul>
+
+  <h3>Known limitations</h3>
+  <ul>
+    <li>The proxy's HTML tag rewriting uses a string-scan approach; for malformed HTML with <code>&gt;</code> inside quoted attribute values, a proper HTML parser (<code>html5ever</code> or <code>scraper</code>) would be more robust</li>
+    <li>Upload progress currently emits 0% then 100%; true byte-streaming progress for multipart uploads would require a custom <code>HttpBody</code> implementation (reqwest 0.13's multipart API doesn't easily expose it)</li>
+    <li>The remote site proxy doesn't handle authenticated pages (no cookie/header forwarding yet)</li>
+    <li>No reload-on-disk-change notification (conflict detection is one-way: checks at save time, doesn't watch for external changes while editing)</li>
+  </ul>
+
+  <hr>
+
+  <!-- ============ RUN ============ -->
+  <h2 id="run">How to Run</h2>
+
+  <h3>Prerequisites</h3>
+  <ul>
+    <li>Rust 1.92+ (<code>rustup</code>)</li>
+    <li>Xcode Command Line Tools (macOS) or equivalent</li>
+    <li>Node.js 20+ and npm</li>
+  </ul>
+
+  <h3>Build &amp; run Webforge Studio</h3>
+  <pre><code>cd /Users/cal/webforge-studio
+npm install
+npm run tauri dev</code></pre>
+  <p>First launch compiles ~526 Rust crates (~5 min). Subsequent launches take 5-50s.</p>
+
+  <h3>Add a local-folder site</h3>
+  <ol>
+    <li>Click the <strong>Sites</strong> tab → <strong>+ Add site</strong></li>
+    <li>Select type: <strong>Local folder</strong></li>
+    <li>Enter a name, click <strong>Browse</strong> to pick a folder containing HTML files</li>
+    <li>Set the start page (e.g. <code>index.html</code>)</li>
+    <li>Click <strong>Save site</strong>, then <strong>Open</strong> on the site card</li>
+    <li>Editor opens in a new window, loads the page from the local folder via the embedded server</li>
+    <li>Edit → save → writes back to disk (with conflict detection)</li>
+  </ol>
+
+  <h3>Add a remote-server site</h3>
+  <ol>
+    <li>Select type: <strong>Remote server</strong></li>
+    <li>Enter the server URL (e.g. <code>http://localhost:8080</code> where <code>save.php</code> and <code>upload.php</code> live)</li>
+    <li>Open → editor loads from localhost, iframe loads the remote page via the same-origin proxy</li>
+    <li>Save → forwards to remote <code>save.php</code></li>
+  </ol>
+
+  <h3>Use the Theme Builder</h3>
+  <ol>
+    <li>Click the <strong>Theme Builder</strong> tab</li>
+    <li>Click the drop zone or drag a folder → pick a template folder (HTML or WordPress theme)</li>
+    <li>Review the classification (WP theme name detected, template count)</li>
+    <li>Set a group name, click <strong>Convert templates</strong></li>
+    <li>Review generated sections with previews</li>
+    <li>Click <strong>Export as .zip</strong> → save the drop-in bundle</li>
+    <li>Unzip into your Webforge project: add <code>&lt;script src="sections.js"&gt;&lt;/script&gt;</code> to <code>editor.html</code>, copy <code>assets/</code> to web root, reload</li>
+  </ol>
+
+  <h3>Run the standalone Webforge editor (without Tauri)</h3>
+  <pre><code>cd /Users/cal/webforge
+python3 -m http.server 8080
+# open http://localhost:8080/editor.html</code></pre>
+
+  <hr>
+
+  <p style="color: var(--muted); font-size: 13px; text-align: center; margin-top: 48px;">
+    Webforge Studio Developer Brief &middot; Generated June 23, 2026 &middot; Single-session build log
+  </p>
+
+</div>
+</body>
+</html>

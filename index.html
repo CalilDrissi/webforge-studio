@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Webforge Studio</title>
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+  <body>
+    <main class="app">
+      <nav class="tabs">
+        <button class="tab active" data-view="dashboard">Sites</button>
+        <button class="tab" data-view="themebuilder">Theme Builder</button>
+        <button class="tab" data-view="connect">Connect Agent</button>
+      </nav>
+
+      <!-- DASHBOARD VIEW -->
+      <section id="view-dashboard" class="view active">
+        <header class="app-header">
+          <div class="brand">
+            <h1>Webforge Studio</h1>
+            <span class="subtitle">Desktop workspace for Webforge sites</span>
+          </div>
+          <div class="header-actions">
+            <span id="server-status" class="server-status idle">Server: starting…</span>
+            <button id="toggle-add" class="btn primary">+ New workspace</button>
+          </div>
+        </header>
+
+        <section id="add-form" class="add-form hidden">
+          <h2>Create a workspace</h2>
+          <div class="form-row form-row-kind">
+            <label>
+              <span>Type</span>
+              <select id="site-kind">
+                <option value="local-folder">Managed folder (Webforge Studio creates &amp; owns it)</option>
+                <option value="local-import">Existing folder (point at a folder on disk)</option>
+                <option value="remote">Remote server (forward saves to a remote URL)</option>
+              </select>
+            </label>
+            <label>
+              <span>Name</span>
+              <input id="site-name" placeholder="My landing page" />
+            </label>
+          </div>
+          <div id="site-local-row" class="form-row">
+            <label id="site-folder-label">
+              <span>Folder path</span>
+              <div class="path-row">
+                <input id="site-folder-path" placeholder="/path/to/your/site" readonly />
+                <button id="site-pick-folder" class="btn">Browse</button>
+              </div>
+            </label>
+            <label>
+              <span>Start page (file inside folder)</span>
+              <input id="site-start-page" placeholder="index.html" value="index.html" />
+            </label>
+          </div>
+          <div id="site-remote-row" class="form-row hidden">
+            <label>
+              <span>Server URL (base URL containing editor.html)</span>
+              <input id="site-url" placeholder="http://localhost:8080" />
+            </label>
+          </div>
+          <div class="form-actions">
+            <button id="add-site" class="btn primary">Create workspace</button>
+            <button id="cancel-add" class="btn">Cancel</button>
+            <span id="add-status" class="status"></span>
+          </div>
+        </section>
+
+        <section class="sites">
+          <div class="sites-header">
+            <h2>Your workspaces</h2>
+            <span id="workspaces-root-label" class="muted"></span>
+          </div>
+          <div id="sites-empty" class="empty hidden">
+            No workspaces yet. Click <strong>+ New workspace</strong> to create one.
+          </div>
+          <ul id="sites-list" class="sites-list"></ul>
+        </section>
+      </section>
+
+      <!-- THEME BUILDER VIEW -->
+      <section id="view-themebuilder" class="view hidden">
+        <header class="app-header">
+          <div class="brand">
+            <h1>Theme Builder</h1>
+            <span class="subtitle">Convert HTML or WordPress templates into Webforge-ready sections</span>
+          </div>
+          <button id="tb-ai-settings-btn" class="btn">AI Settings</button>
+        </header>
+
+        <section id="tb-ai-settings" class="panel hidden">
+          <h2>AI Provider Settings</h2>
+          <div class="form-row">
+            <label>
+              <span>Provider</span>
+              <select id="ai-provider">
+                <option value="">Select a provider...</option>
+              </select>
+            </label>
+            <label>
+              <span>Model</span>
+              <input id="ai-model" placeholder="gpt-4o, llama3.1, etc." />
+            </label>
+          </div>
+          <div class="form-row">
+            <label>
+              <span>Base URL (OpenAI-compatible /v1 endpoint)</span>
+              <input id="ai-base-url" placeholder="https://api.openai.com/v1" />
+            </label>
+            <label>
+              <span>API Key</span>
+              <input id="ai-api-key" type="password" placeholder="sk-..." />
+            </label>
+          </div>
+          <div class="form-actions">
+            <button id="ai-save" class="btn primary">Save settings</button>
+            <button id="ai-test" class="btn">Test connection</button>
+            <span id="ai-settings-status" class="status"></span>
+          </div>
+        </section>
+
+        <div id="tb-drop" class="drop-zone">
+          <div id="tb-drop-inner">
+            <div class="drop-icon">&#128193;</div>
+            <div class="drop-text">Drop a template folder here, or click to browse</div>
+            <div class="muted">Static HTML folders or WordPress themes (with style.css + Theme Name)</div>
+          </div>
+        </div>
+
+        <section id="tb-classify" class="panel hidden"></section>
+
+        <section id="tb-convert" class="panel hidden">
+          <h2>2. Convert</h2>
+          <div class="form-row">
+            <label>
+              <span>Group name (used as Webforge.SectionsGroup key)</span>
+              <input id="tb-group-name" placeholder="imported" />
+            </label>
+          </div>
+          <div id="tb-wp-row" class="form-row hidden">
+            <label>
+              <span>WordPress URL (optional - fetch rendered pages from a running WP instance for real menus/content)</span>
+              <input id="tb-wp-url" placeholder="http://localhost:8080/wp/" />
+            </label>
+          </div>
+          <div class="convert-buttons">
+            <button id="tb-convert-btn" class="btn">Convert (mechanical)</button>
+            <button id="tb-convert-ai-btn" class="btn primary">Convert with AI</button>
+          </div>
+        </section>
+
+        <section id="tb-ai-progress" class="panel hidden">
+          <div class="ai-progress-row">
+            <div class="ai-progress-bar"><div id="ai-progress-fill"></div></div>
+            <span id="ai-progress-text" class="muted"></span>
+          </div>
+          <div id="ai-reasoning" class="ai-reasoning hidden"></div>
+        </section>
+
+        <section id="tb-results" class="panel hidden"></section>
+
+        <section class="panel export-bar">
+          <button id="tb-screenshots" class="btn hidden">Generate screenshots</button>
+          <button id="tb-export" class="btn primary hidden">Export as .zip</button>
+        </section>
+
+        <section class="panel log-panel">
+          <h3>Log</h3>
+          <div id="tb-log" class="log"></div>
+        </section>
+      </section>
+
+      <!-- CONNECT AGENT VIEW -->
+      <section id="view-connect" class="view hidden">
+        <header class="app-header">
+          <div class="brand">
+            <h1>Connect Agent</h1>
+            <span class="subtitle">Expose the live editor to MCP clients (Claude Desktop, Cursor, etc.)</span>
+          </div>
+        </header>
+        <section class="panel">
+          <h2>MCP Server</h2>
+          <p class="muted">The Rust-native MCP server lets external AI clients drive the active editor window through 12 tools (open_page, get_html, set_html, add_component, select_element, set_property, delete_element, get_components, undo, redo, save_template).</p>
+          <div class="form-actions" style="margin-top: 16px;">
+            <button id="mcp-start" class="btn primary">Start MCP server</button>
+            <button id="mcp-stop" class="btn" disabled>Stop</button>
+            <span id="mcp-status" class="status">Not running</span>
+          </div>
+          <div id="mcp-config" class="mcp-config hidden">
+            <h3>Claude Desktop config</h3>
+            <pre class="config-snippet"></pre>
+            <button id="mcp-copy" class="btn">Copy</button>
+          </div>
+        </section>
+        <section class="panel">
+          <h3>Active editor</h3>
+          <p id="mcp-active-editor" class="muted">No editor window open.</p>
+        </section>
+        <section class="panel log-panel">
+          <h3>Tool-call log</h3>
+          <div id="mcp-log" class="log"></div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
