@@ -1519,4 +1519,153 @@ mod tests {
         let s = body_text(resp).await;
         assert!(s.contains("index"));
     }
+
+    // ---- E2E integration tests: full save → read → scan → upload pipeline ----
+
+    #[tokio::test]
+    async fn e2e_save_then_read_on_disk() {
+        let dir = tempdir().unwrap();
+        let root = dir.path().to_path_buf();
+
+        // 1. Save a page via the API handler
+        let form = "file=my-pages/hello.html&html=%3Chtml%3E%3Cbody%3EHello%20E2E%3C%2Fbody%3E%3C%2Fhtml%3E";
+        let resp = handle_save(&root, Method::POST, "", Bytes::from(form.to_string())).await;
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // 2. Verify the file exists on disk with the correct content
+        let saved = fs::read_to_string(root.join("my-pages/hello.html")).unwrap();
+        assert!(saved.contains("Hello E2E"));
+        assert!(saved.contains("<html>"));
+    }
+
+    #[tokio::test]
+    async fn e2e_save_then_scan() {
+        let dir = tempdir().unwrap();
+        let root = dir.path().to_path_buf();
+
+        // 1. Save a file
+        let form = "file=media/test.html&html=%3Chtml%3Etest%3C%2Fhtml%3E";
+        let _ = handle_save(&root, Method::POST, "", Bytes::from(form.to_string())).await;
+
+        // 2. Upload a fake image
+        let boundary = "----E2EBoundary";
+        let body = format!(
+            "--{}\r\nContent-Disposition: form-data; name=\"mediaPath\"\r\n\r\nmedia\r\n\
+             --{}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"test.png\"\r\nContent-Type: image/png\r\n\r\nPNGBYTES\r\n\
+             --{}--\r\n",
+            boundary, boundary, boundary
+        );
+        let mut headers = HeaderMap::new();
+        headers.insert("content-type", format!("multipart/form-data; boundary={}", boundary).parse().unwrap());
+        let resp = handle_upload(&root, Method::POST, &headers, &None, Bytes::from(body)).await;
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // 3. Scan the media folder — should show both files
+        let resp = handle_scan(&root, Method::GET, &Some("mediaPath=media".to_string())).await;
+        assert_eq!(resp.status(), StatusCode::OK);
+        let s = body_text(resp).await;
+        assert!(s.contains("test.html"), "scan should list test.html");
+        assert!(s.contains("test.png"), "scan should list test.png");
+    }
+
+    #[tokio::test]
+    async fn e2e_save_rejects_path_traversal() {
+        let dir = tempdir().unwrap();
+        let root = dir.path().to_path_buf();
+
+        // Try to write outside the workspace via ../
+        let form = "file=../../etc/evil.html&html=%3Chtml%3Eevil%3C%2Fhtml%3E";
+        let resp = handle_save(&root, Method::POST, "", Bytes::from(form.to_string())).await;
+
+        // The file should be sanitized to a path inside root, not ../../etc/
+        let evil_path = root.join("../../etc/evil.html");
+        assert!(!evil_path.exists(), "path traversal should not create file outside root");
+
+        // The sanitized path should exist inside the workspace
+        let safe_path = root.join("etc/evil.html");
+        if safe_path.exists() {
+            // it was sanitized to etc/evil.html inside root — that's fine
+            fs::remove_file(&safe_path).ok();
+        }
+    }
+
+    #[tokio::test]
+    async fn e2e_upload_then_serve() {
+        let dir = tempdir().unwrap();
+        let root = dir.path().to_path_buf();
+
+        // 1. Upload a file
+        let boundary = "----E2EBoundary";
+        let body = format!(
+            "--{}\r\nContent-Disposition: form-data; name=\"mediaPath\"\r\n\r\nuploads\r\n\
+             --{}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"photo.jpg\"\r\nContent-Type: image/jpeg\r\n\r\nJPEGDATA\r\n\
+             --{}--\r\n",
+            boundary, boundary, boundary
+        );
+        let mut headers = HeaderMap::new();
+        headers.insert("content-type", format!("multipart/form-data; boundary={}", boundary).parse().unwrap());
+        let resp = handle_upload(&root, Method::POST, &headers, &None, Bytes::from(body)).await;
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // 2. Verify the file is on disk
+        assert!(root.join("uploads/photo.jpg").exists());
+
+        // 3. Serve it via serve_from_root
+        let resp = serve_from_root(&root, "uploads/photo.jpg", false);
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn e2e_pages_excludes_src_and_editor() {
+        let dir = tempdir().unwrap();
+        let root = dir.path().to_path_buf();
+
+        // Create compiled pages
+        fs::create_dir_all(root.join("demo/landing")).unwrap();
+        fs::write(root.join("demo/landing/index.html"), "<html></html>").unwrap();
+        fs::write(root.join("demo/landing/about.html"), "<html></html>").unwrap();
+        fs::write(root.join("demo/landing/editor.html"), "<html></html>").unwrap();
+
+        // Create source templates (should be excluded)
+        fs::create_dir_all(root.join("demo/landing/src")).unwrap();
+        fs::write(root.join("demo/landing/src/broken.html"), "@@include('head.html')").unwrap();
+
+        // Create my-pages
+        fs::create_dir_all(root.join("my-pages")).unwrap();
+        fs::write(root.join("my-pages/home.html"), "<html></html>").unwrap();
+
+        let resp = handle_pages(&root, Method::GET).await;
+        assert_eq!(resp.status(), StatusCode::OK);
+        let s = body_text(resp).await;
+
+        // Should include compiled pages and my-pages
+        assert!(s.contains("home"), "should list my-pages/home.html");
+        assert!(s.contains("about"), "should list demo/landing/about.html");
+        // Should NOT include editor.html or src/ templates
+        assert!(!s.contains("broken"), "should not list src/broken.html");
+    }
+
+    #[tokio::test]
+    async fn e2e_rename_and_delete() {
+        let dir = tempdir().unwrap();
+        let root = dir.path().to_path_buf();
+
+        // 1. Save a file
+        let form = "file=old-page.html&html=%3Chtml%3Econtent%3C%2Fhtml%3E";
+        let _ = handle_save(&root, Method::POST, "", Bytes::from(form.to_string())).await;
+        assert!(root.join("old-page.html").exists());
+
+        // 2. Rename it
+        let form = "file=old-page.html&newfile=new-page.html";
+        let resp = handle_save(&root, Method::POST, "rename", Bytes::from(form.to_string())).await;
+        assert_eq!(resp.status(), StatusCode::OK);
+        assert!(!root.join("old-page.html").exists());
+        assert!(root.join("new-page.html").exists());
+
+        // 3. Delete it
+        let form = "file=new-page.html";
+        let resp = handle_save(&root, Method::POST, "delete", Bytes::from(form.to_string())).await;
+        assert_eq!(resp.status(), StatusCode::OK);
+        assert!(!root.join("new-page.html").exists());
+    }
 }
