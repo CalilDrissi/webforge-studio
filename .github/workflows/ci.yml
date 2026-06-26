@@ -2,19 +2,15 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
 
 jobs:
-  test-and-build:
+  test:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - platform: macos-14
-            target: aarch64-apple-darwin
-          - platform: windows-latest
-            target: x86_64-pc-windows-msvc
+        platform: [macos-14, windows-latest]
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -23,12 +19,10 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install Rust (stable)
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
 
       - name: Cache Rust crates
         uses: Swatinem/rust-cache@v2
@@ -44,7 +38,3 @@ jobs:
       - name: Rust tests
         working-directory: src-tauri
         run: cargo test --lib
-
-      - name: Build Tauri app
-        working-directory: src-tauri
-        run: cargo build --release --target ${{ matrix.target }}

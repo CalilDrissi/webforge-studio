@@ -999,6 +999,11 @@ fn walk_html_pages(base: &Path, current: &Path, group: &str, out: &mut Vec<PageE
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().to_string();
         if path.is_dir() {
+            // skip source template dirs — they contain unresolved @@include directives
+            // that only work with a build step; serving them raw shows broken pages
+            if name == "src" {
+                continue;
+            }
             walk_html_pages(base, &path, group, out);
             continue;
         }
@@ -1342,6 +1347,26 @@ mod tests {
         assert!(names.contains(&"home".to_string()));
         // editor.html is excluded
         assert!(!names.iter().any(|n| n == "editor"));
+    }
+
+    #[test]
+    fn collect_pages_excludes_src_dir() {
+        let dir = tempdir().unwrap();
+        let root = dir.path();
+
+        fs::create_dir_all(root.join("demo/landing/src/_includes")).unwrap();
+        fs::write(root.join("demo/landing/index.html"), "<html></html>").unwrap();
+        // src/ contains unresolved @@include templates — must be excluded
+        fs::write(root.join("demo/landing/src/broken.html"), "@@include('head.html')").unwrap();
+        fs::write(root.join("demo/landing/src/_includes/head.html"), "<head></head>").unwrap();
+
+        let pages = collect_pages(root);
+        let names: Vec<_> = pages.iter().map(|p| p.name.clone()).collect();
+        // index.html in a subfolder gets named after the folder ("landing")
+        assert!(names.contains(&"landing".to_string()));
+        // src/ templates must NOT appear
+        assert!(!names.contains(&"broken".to_string()));
+        assert!(!names.contains(&"head".to_string()));
     }
 
     #[test]

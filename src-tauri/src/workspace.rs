@@ -115,8 +115,18 @@ pub fn open_workspace(
 
     // register the folder with the embedded server (needed for /site/<id>/... and /api/<id>/...)
     if ws.kind != "remote" {
+        let folder_path = PathBuf::from(&ws.folder_path);
+        if !folder_path.exists() {
+            return Err(format!(
+                "Workspace folder does not exist on disk: {}\n\n\
+                 This can happen if the folder was deleted or was in a temporary location.\n\
+                 Try creating a new managed workspace instead.",
+                ws.folder_path
+            ));
+        }
         let canonical =
-            fs::canonicalize(&ws.folder_path).unwrap_or_else(|_| PathBuf::from(&ws.folder_path));
+            fs::canonicalize(&folder_path).unwrap_or_else(|_| folder_path.clone());
+        eprintln!("[WORKSPACE] registering site {} -> {:?}", ws.id, canonical);
         let folders = site_folders.0.clone();
         tauri::async_runtime::block_on(async {
             let mut g = folders.write().await;

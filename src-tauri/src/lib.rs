@@ -210,13 +210,25 @@ pub fn run() {
                 resource_dir
             };
 
-            // start the embedded http server, sharing the same site_folders map
+            // start the embedded http server; if it fails, log the error but don't crash
+            // — the dashboard will show a "server not started" status
             let rt = tokio::runtime::Runtime::new().map_err(|e| e.to_string())?;
-            let state = rt
-                .block_on(start_server(resource_dir, site_folders.clone()))
-                .map_err(|e| e.to_string())?;
+            let server_port = match rt.block_on(start_server(resource_dir, site_folders.clone())) {
+                Ok(state) => {
+                    app.manage(PortState(state.port));
+                    state.port
+                }
+                Err(e) => {
+                    eprintln!("[webforge-studio] embedded server failed to start: {}", e);
+                    app.manage(PortState(0)); // 0 = server not running
+                    0
+                }
+            };
 
-            app.manage(PortState(state.port));
+            if server_port > 0 {
+                eprintln!("[webforge-studio] embedded server on port {}", server_port);
+            }
+
             // leak the runtime to keep the server alive for the app lifetime
             std::mem::forget(rt);
             Ok(())

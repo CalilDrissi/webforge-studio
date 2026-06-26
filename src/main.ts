@@ -111,13 +111,22 @@ function kindLabel(kind: string): string {
   }
 }
 
+/// Convert a DB row (snake_case) to the camelCase shape expected by the Rust Workspace struct.
+function toCamelWorkspace(ws: Workspace) {
+  return {
+    id: ws.id,
+    name: ws.name,
+    slug: ws.slug,
+    kind: ws.kind,
+    folderPath: ws.folder_path,
+    startPage: ws.start_page,
+    serverUrl: ws.server_url,
+  };
+}
+
 async function openWorkspace(ws: Workspace): Promise<void> {
   try {
-    if (ws.kind !== "remote" && ws.kind !== "local-folder" && ws.kind !== "local-import") {
-      // for local-import, ensure the folder is registered with the embedded server
-      await invoke("register_site_folder", { siteId: ws.id, folderPath: ws.folder_path });
-    }
-    await invoke("open_workspace", { workspace: ws });
+    await invoke("open_workspace", { workspace: toCamelWorkspace(ws) });
     const database = await loadDb();
     await database.execute("UPDATE workspaces SET last_opened_at = $1 WHERE id = $2;", [
       Math.floor(Date.now() / 1000),
@@ -283,7 +292,7 @@ async function autoResumeWorkspaces(): Promise<void> {
     );
     for (const ws of wsRows) {
       try {
-        await invoke("open_workspace", { workspace: ws });
+        await invoke("open_workspace", { workspace: toCamelWorkspace(ws) });
         await database.execute("UPDATE workspaces SET last_opened_at = $1 WHERE id = $2;", [
           Math.floor(Date.now() / 1000),
           ws.id,
