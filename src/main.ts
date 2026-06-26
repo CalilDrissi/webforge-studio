@@ -81,6 +81,7 @@ async function renderWorkspaces(workspaces: Workspace[]): Promise<void> {
       </div>
       <div class="site-actions">
         ${isOpen ? `<button class="btn stop-btn">Stop</button>` : `<button class="btn primary open-btn">Open</button>`}
+        <button class="btn themes-btn">Themes</button>
         <button class="btn danger delete-btn">Delete</button>
       </div>
     `;
@@ -93,14 +94,122 @@ async function renderWorkspaces(workspaces: Workspace[]): Promise<void> {
       : `Added ${new Date(ws.created_at * 1000).toLocaleDateString()}`;
     meta.appendChild(document.createTextNode(" " + time));
 
+    // show selected themes count
+    showSelectedThemesBadge(li, ws.id);
+
     if (isOpen) {
       li.querySelector<HTMLElement>(".stop-btn")!.addEventListener("click", () => closeWorkspace(ws));
     } else {
       li.querySelector<HTMLElement>(".open-btn")!.addEventListener("click", () => openWorkspace(ws));
     }
+    li.querySelector<HTMLElement>(".themes-btn")!.addEventListener("click", () => openThemePicker(ws));
     li.querySelector<HTMLElement>(".delete-btn")!.addEventListener("click", () => deleteWorkspace(ws));
     sitesListEl.appendChild(li);
   }
+}
+
+async function showSelectedThemesBadge(li: HTMLElement, workspaceId: number): Promise<void> {
+  try {
+    const database = await loadDb();
+    const rows = await database.select<{ value: string }[]>(
+      "SELECT value FROM workspace_prefs WHERE workspace_id = $1 AND key = 'themes';",
+      [workspaceId]
+    );
+    if (rows.length > 0) {
+      const themes: string[] = JSON.parse(rows[0].value);
+      if (themes.length > 0) {
+        const badge = document.createElement("span");
+        badge.className = "badge-mini";
+        badge.style.marginLeft = "6px";
+        badge.textContent = `${themes.length} themes`;
+        li.querySelector<HTMLElement>(".site-meta")!.appendChild(badge);
+      }
+    }
+  } catch { /* no prefs yet */ }
+}
+
+async function openThemePicker(ws: Workspace): Promise<void> {
+  // fetch available themes from the library
+  let themes: { slug: string; name: string; sectionCount: number; thumbnail: string | null }[] = [];
+  try {
+    themes = await invoke<typeof themes>("list_themes");
+  } catch {
+    // library empty or error
+  }
+
+  // fetch currently selected themes for this workspace
+  let selected: string[] = [];
+  try {
+    const database = await loadDb();
+    const rows = await database.select<{ value: string }[]>(
+      "SELECT value FROM workspace_prefs WHERE workspace_id = $1 AND key = 'themes';",
+      [ws.id]
+    );
+    if (rows.length > 0) {
+      selected = JSON.parse(rows[0].value);
+    }
+  } catch { /* no prefs yet */ }
+
+  // build modal
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  const modal = document.createElement("div");
+  modal.className = "modal";
+  modal.innerHTML = `
+    <h2>Themes for ${ws.name}</h2>
+    <p class="muted">Select which themes to load in the editor's section panel.</p>
+    <div class="theme-picker-list"></div>
+    <div class="form-actions">
+      <button class="btn primary save-themes-btn">Save</button>
+      <button class="btn cancel-themes-btn">Cancel</button>
+    </div>
+  `;
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  const listEl = modal.querySelector<HTMLElement>(".theme-picker-list")!;
+  if (themes.length === 0) {
+    listEl.innerHTML = '<p class="muted">No themes in the library yet. Convert a template in the Theme Builder tab first.</p>';
+  } else {
+    for (const theme of themes) {
+      const isChecked = selected.includes(theme.slug);
+      const item = document.createElement("label");
+      item.className = "theme-picker-item";
+      item.innerHTML = `
+        <input type="checkbox" value="${theme.slug}" ${isChecked ? "checked" : ""} />
+        ${theme.thumbnail ? `<img class="theme-picker-thumb" src="${theme.thumbnail}" />` : ""}
+        <div class="theme-picker-info">
+          <div class="theme-picker-name"></div>
+          <span class="muted">${theme.sectionCount} sections</span>
+        </div>
+      `;
+      item.querySelector<HTMLElement>(".theme-picker-name")!.textContent = theme.name;
+      listEl.appendChild(item);
+    }
+  }
+
+  return new Promise<void>((resolve) => {
+    modal.querySelector<HTMLElement>(".cancel-themes-btn")!.addEventListener("click", () => {
+      overlay.remove();
+      resolve();
+    });
+    modal.querySelector<HTMLElement>(".save-themes-btn")!.addEventListener("click", async () => {
+      const checked = Array.from(listEl.querySelectorAll<HTMLInputElement>('input[type="checkbox"]:checked'))
+        .map((cb) => cb.value);
+      try {
+        const database = await loadDb();
+        await database.execute(
+          "INSERT INTO workspace_prefs (workspace_id, key, value) VALUES ($1, 'themes', $2) ON CONFLICT(workspace_id, key) DO UPDATE SET value = $2;",
+          [ws.id, JSON.stringify(checked)]
+        );
+      } catch (e) {
+        alert(`Failed to save theme selection: ${e}`);
+      }
+      overlay.remove();
+      await loadWorkspaces();
+      resolve();
+    });
+  });
 }
 
 function kindLabel(kind: string): string {
