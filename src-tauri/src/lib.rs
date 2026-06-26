@@ -198,10 +198,13 @@ pub fn run() {
         .manage(SiteFoldersState(site_folders.clone()))
         .setup(move |app| {
             // resolve the bundled webforge resources directory
+            // Tauri bundles "resources/webforge/**/*" under <resource_dir>/resources/webforge/
+            // because the config path is "resources/webforge/**/*"
             let resource_dir = app
                 .path()
                 .resource_dir()
                 .map_err(|e| e.to_string())?
+                .join("resources")
                 .join("webforge");
             let resource_dir = if !resource_dir.exists() {
                 // dev mode: fall back to the source resources dir
