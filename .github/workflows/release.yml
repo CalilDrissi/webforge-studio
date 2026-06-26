@@ -52,51 +52,23 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build frontend
-        run: npm run build
+      - name: Build Tauri app (compiles Rust + bundles DMG/EXE)
+        run: npx tauri build --target ${{ matrix.target }}
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "12.0"
 
-      - name: Build Tauri app
-        working-directory: src-tauri
-        run: cargo build --release --target ${{ matrix.target }}
-
-      - name: Bundle with Tauri
-        working-directory: src-tauri
-        run: npx tauri build --target ${{ matrix.target }} --no-bundle
-
-      # ---- macOS: ad-hoc sign the binary ----
+      # ---- macOS: ad-hoc sign the .app bundle ----
       - name: Ad-hoc sign (macOS)
         if: startsWith(matrix.platform, 'macos')
         run: |
-          codesign --sign - --force --deep \
-            "src-tauri/target/${{ matrix.target }}/release/bundle/macos/Webforge Studio.app"
-
-      # ---- Build DMG (macOS) ----
-      - name: Create DMG (macOS)
-        if: startsWith(matrix.platform, 'macos')
-        run: |
           APP="src-tauri/target/${{ matrix.target }}/release/bundle/macos/Webforge Studio.app"
-          DMG="webforge-studio-${{ matrix.target }}.dmg"
-          # Create a temporary DMG folder
-          mkdir -p /tmp/dmg-staging
-          cp -R "$APP" /tmp/dmg-staging/
-          # Add a symlink to Applications for drag-to-install
-          ln -sf /Applications /tmp/dmg-staging/Applications
-          # Create the DMG
-          hdiutil create -volname "Webforge Studio" -srcfolder /tmp/dmg-staging -ov -format UDZO "$DMG"
-          # Ad-hoc sign the DMG too
-          codesign --sign - --force "$DMG"
-          rm -rf /tmp/dmg-staging
-
-      # ---- Build NSIS installer (Windows) ----
-      - name: Create NSIS installer (Windows)
-        if: matrix.platform == 'windows-latest'
-        working-directory: src-tauri
-        shell: bash
-        run: |
-          # tauri build already creates the NSIS installer when --no-bundle is NOT used
-          # Since we used --no-bundle above, run the bundler for just NSIS
-          # Actually, let's use the full bundle command instead
-          cargo tauri build --target ${{ matrix.target }} --bundles nsis
+          if [ -d "$APP" ]; then
+            codesign --sign - --force --deep "$APP"
+            echo "Signed: $APP"
+          else
+            echo "App bundle not found at $APP"
+            exit 1
+          fi
 
       # ---- Upload artifacts ----
       - name: Upload macOS DMG artifact
@@ -104,7 +76,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: webforge-studio-${{ matrix.target }}-dmg
-          path: webforge-studio-${{ matrix.target }}.dmg
+          path: |
+            src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
           if-no-files-found: warn
 
       - name: Upload Windows installer artifact
