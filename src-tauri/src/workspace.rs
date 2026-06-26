@@ -153,6 +153,14 @@ pub fn open_workspace(
         urlencoding::encode(&start_url), folder_encoded, server_encoded
     );
 
+    // append selected theme slugs if any are stored in workspace_prefs
+    let themes_param = get_workspace_themes_param(ws.id);
+    let editor_url = if !themes_param.is_empty() {
+        format!("{}&themes={}", editor_url, themes_param)
+    } else {
+        editor_url
+    };
+
     let parsed: tauri::Url = editor_url
         .parse()
         .map_err(|e: <tauri::Url as std::str::FromStr>::Err| e.to_string())?;
@@ -173,6 +181,50 @@ pub fn close_workspace(workspace_id: i64, app: AppHandle) -> Result<(), String> 
         let _ = win.close();
     }
     Ok(())
+}
+
+/// Read the selected theme slugs for a workspace from the SQLite DB and format
+/// them as a comma-separated URL query param (e.g., "my-theme,another-theme").
+/// Returns empty string if no themes are selected.
+fn get_workspace_themes_param(workspace_id: i64) -> String {
+    let db_path = dirs_next::home_dir().map(|h| {
+        if cfg!(target_os = "macos") {
+            h.join("Library/Application Support/com.webforge.studio/webforge.db")
+        } else {
+            h.join(".config/com.webforge.studio/webforge.db")
+        }
+    });
+
+    let db_path = match db_path {
+        Some(p) if p.exists() => p,
+        _ => return String::new(),
+    };
+
+    // use sqlite3 CLI to query — works on macOS/Linux. On Windows we'd need rusqlite.
+    // For now, return empty (themes will be added via the frontend URL in a future enhancement)
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        let output = Command::new("sqlite3")
+            .arg(&db_path)
+            .arg(format!(
+                "SELECT value FROM workspace_prefs WHERE workspace_id = {} AND key = 'themes';",
+                workspace_id
+            ))
+            .output();
+        if let Ok(out) = output {
+            if out.status.success() {
+                let val = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                if !val.is_empty() {
+                    // parse the JSON array of slugs
+                    if let Ok(slugs) = serde_json::from_str::<Vec<String>>(&val) {
+                        return slugs.join(",");
+                    }
+                }
+            }
+        }
+    }
+    String::new()
 }
 
 /// Check whether a workspace's editor window is currently open.

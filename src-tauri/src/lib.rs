@@ -11,6 +11,7 @@ mod export;
 mod folder;
 mod server;
 mod site_io;
+mod theme_library;
 mod workspace;
 
 use server::start_server;
@@ -259,7 +260,13 @@ pub fn run() {
             workspace::is_workspace_open,
             workspace::delete_workspace_folder,
             workspace::get_workspaces_root,
-            workspace::get_workspace_size
+            workspace::get_workspace_size,
+            theme_library::save_theme_to_library,
+            theme_library::list_themes,
+            theme_library::delete_theme,
+            theme_library::get_theme_path,
+            theme_library::preview_theme,
+            theme_library::import_theme_zip
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

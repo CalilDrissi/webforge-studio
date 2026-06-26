@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import Database from "@tauri-apps/plugin-sql";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { initThemeBuilder } from "./theme-builder";
+import { initThemeLibrary } from "./theme-library";
 
 interface Workspace {
   id: number;
@@ -369,6 +370,7 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
   initThemeBuilder();
+  initThemeLibrary();
   initConnectAgent();
 });
 

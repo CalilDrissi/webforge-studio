@@ -12,6 +12,7 @@
       <nav class="tabs">
         <button class="tab active" data-view="dashboard">Sites</button>
         <button class="tab" data-view="themebuilder">Theme Builder</button>
+        <button class="tab" data-view="library">Theme Library</button>
         <button class="tab" data-view="connect">Connect Agent</button>
       </nav>
 
@@ -166,12 +167,32 @@
         <section class="panel export-bar">
           <button id="tb-screenshots" class="btn hidden">Generate screenshots</button>
           <button id="tb-export" class="btn primary hidden">Export as .zip</button>
+          <button id="tb-save-library" class="btn primary hidden">Save to Library</button>
         </section>
 
         <section class="panel log-panel">
           <h3>Log</h3>
           <div id="tb-log" class="log"></div>
         </section>
+      </section>
+
+      <!-- THEME LIBRARY VIEW -->
+      <section id="view-library" class="view hidden">
+        <header class="app-header">
+          <div class="brand">
+            <h1>Theme Library</h1>
+            <span class="subtitle">Converted themes you can load into your workspaces</span>
+          </div>
+          <div class="header-actions">
+            <button id="lib-import-zip" class="btn">Import .zip</button>
+            <button id="lib-refresh" class="btn">Refresh</button>
+          </div>
+        </header>
+
+        <div id="lib-empty" class="empty hidden">
+          No themes yet. Convert a template in the <strong>Theme Builder</strong> tab and click "Save to Library".
+        </div>
+        <div id="lib-grid" class="theme-grid"></div>
       </section>
 
       <!-- CONNECT AGENT VIEW -->

@@ -118,6 +118,7 @@ export function initThemeBuilder(): void {
   const wpUrlEl = document.querySelector<HTMLInputElement>("#tb-wp-url")!;
   const wpRowEl = document.querySelector<HTMLElement>("#tb-wp-row")!;
   const exportBtn = document.querySelector<HTMLElement>("#tb-export")!;
+  const saveLibraryBtn = document.querySelector<HTMLElement>("#tb-save-library")!;
   const screenshotBtn = document.querySelector<HTMLElement>("#tb-screenshots")!;
   const logEl = document.querySelector<HTMLElement>("#tb-log")!;
 
@@ -156,6 +157,7 @@ export function initThemeBuilder(): void {
     convertEl.classList.add("hidden");
     resultsEl.classList.add("hidden");
     exportBtn.classList.add("hidden");
+    saveLibraryBtn.classList.add("hidden");
     screenshotBtn.classList.add("hidden");
     logEl.innerHTML = "";
   }
@@ -225,6 +227,7 @@ export function initThemeBuilder(): void {
       renderResults(result);
       resultsEl.classList.remove("hidden");
       exportBtn.classList.remove("hidden");
+      saveLibraryBtn.classList.remove("hidden");
       screenshotBtn.classList.remove("hidden");
     } catch (e) {
       log(`Conversion failed: ${e}`, "error");
@@ -370,6 +373,7 @@ export function initThemeBuilder(): void {
       renderResults(mapped);
       resultsEl.classList.remove("hidden");
       exportBtn.classList.remove("hidden");
+      saveLibraryBtn.classList.remove("hidden");
       screenshotBtn.classList.remove("hidden");
     } catch (e) {
       log(`AI conversion failed: ${e}`, "error");
@@ -523,6 +527,32 @@ export function initThemeBuilder(): void {
     }
   }
 
+  async function saveToLibrary(): Promise<void> {
+    if (!state.scan || !state.conversion) return;
+    const groupName = state.conversion.group_name;
+    const slug = groupName.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "theme";
+    log("Saving to Theme Library...");
+    try {
+      const screenshots = state.screenshots.map((s) => s.bytes);
+      await invoke("save_theme_to_library", {
+        slug,
+        name: groupName,
+        groupName,
+        sectionCount: state.conversion.sections.length,
+        sourceFolder: state.scan.root,
+        kind: state.classification?.kind || null,
+        sectionsJs: state.conversion.sections_js,
+        blocksJs: null,
+        screenshots,
+        assetFiles: state.conversion.asset_paths,
+        scanRoot: state.scan.root,
+      });
+      log(`Saved "${groupName}" to library (${state.conversion.sections.length} sections)`);
+    } catch (e) {
+      log(`Save to library failed: ${e}`, "error");
+    }
+  }
+
   // ---- event wiring ----
   dropEl.addEventListener("click", async () => {
     const picked = await openDialog({ directory: true, multiple: false });
@@ -550,6 +580,7 @@ export function initThemeBuilder(): void {
   convertAiBtn.addEventListener("click", convertWithAi);
   screenshotBtn.addEventListener("click", generateScreenshots);
   exportBtn.addEventListener("click", doExport);
+  saveLibraryBtn.addEventListener("click", saveToLibrary);
 
   // AI settings
   setupAiSettingsListeners();

@@ -117,6 +117,20 @@ fn serve_request(
             return Ok(handle_api_route(&rest, method, req, site_folders).await);
         }
 
+        // route /theme-preview/<slug> — serve the preview HTML for a theme
+        if let Some(rest) = rel.strip_prefix("theme-preview/") {
+            let slug = rest.split('?').next().unwrap_or(rest).trim_end_matches('/');
+            return Ok(serve_theme_preview(slug));
+        }
+
+        // route /theme/<slug>/<path...> — serve static assets from a theme folder
+        if let Some(rest) = rel.strip_prefix("theme/") {
+            let mut parts = rest.splitn(2, '/');
+            let slug = parts.next().unwrap_or("");
+            let sub_path = parts.next().unwrap_or("");
+            return Ok(serve_theme_asset(slug, sub_path));
+        }
+
         // route /proxy/<percent-encoded-remote-url> to the remote proxy
         if let Some(rest) = rel.strip_prefix("proxy/") {
             let encoded = rest;
@@ -149,7 +163,7 @@ fn serve_request(
         // built by scanning my-pages/ and demo/ so the file manager shows real files
         // without requiring PHP execution.
         if (rel == "editor.html" || rel == "editor.php") && method == Method::GET {
-            return Ok(serve_editor_with_dynamic_pages(&root, rel));
+            return Ok(serve_editor_with_dynamic_pages(&root, rel, req.uri().query()));
         }
 
         Ok(serve_from_root(&root, rel, true))
@@ -1045,9 +1059,10 @@ fn uppercase_first(s: &str) -> String {
     }
 }
 
-/// Serve editor.html with the `defaultPages` literal replaced by a dynamically scanned list.
+/// Serve editor.html with the `defaultPages` literal replaced by a dynamically scanned list,
+/// and inject selected theme sections.js after the editor's sections.js script tag.
 /// Mirrors editor.php's behaviour but runs entirely in Rust.
-fn serve_editor_with_dynamic_pages(root: &Path, rel: &str) -> Response<Full<Bytes>> {
+fn serve_editor_with_dynamic_pages(root: &Path, rel: &str, query: Option<&str>) -> Response<Full<Bytes>> {
     let file_path = root.join(if rel == "editor.php" { "editor.html" } else { rel });
     let Ok(bytes) = std::fs::read(&file_path) else {
         return not_found_response(&format!("not found: {}", rel));
@@ -1068,9 +1083,24 @@ fn serve_editor_with_dynamic_pages(root: &Path, rel: &str) -> Response<Full<Byte
             ));
         }
         // Replace the literal `= defaultPages;` assignment with our scanned list.
-        // editor.php uses str_replace('= defaultPages;', ...) — we mirror that.
         let replacement = format!(" = {{{}}};", js_items.trim_end_matches(','));
         html = html.replacen("= defaultPages;", &replacement, 1);
+    }
+
+    // inject selected theme sections.js if the editor request has ?themes=slug1,slug2
+    if let Some(q) = query {
+        let theme_slugs = parse_themes_query(q);
+        if !theme_slugs.is_empty() {
+            let theme_js = theme_library::get_theme_sections_js(&theme_slugs);
+            if !theme_js.is_empty() {
+                // inject after the editor's sections.js script tag
+                let inject_tag = format!(
+                    "<script>\n// Theme Library injection\n{}\n</script>\n</head>",
+                    theme_js
+                );
+                html = html.replacen("</head>", &inject_tag, 1);
+            }
+        }
     }
 
     let injected = inject_bridge_shim(&html);
@@ -1081,6 +1111,18 @@ fn serve_editor_with_dynamic_pages(root: &Path, rel: &str) -> Response<Full<Byte
         .header("Cache-Control", "no-cache")
         .body(Full::new(Bytes::from(injected)))
         .unwrap()
+}
+
+/// Parse ?themes=slug1,slug2 from the query string.
+fn parse_themes_query(query: &str) -> Vec<String> {
+    for pair in query.split('&') {
+        let mut kv = pair.splitn(2, '=');
+        if kv.next() == Some("themes") {
+            let val = kv.next().unwrap_or("");
+            return val.split(',').filter(|s| !s.is_empty()).map(|s| s.to_string()).collect();
+        }
+    }
+    Vec::new()
 }
 
 fn php_tag_re(html: &str) -> bool {
@@ -1145,6 +1187,35 @@ fn sanitize_filename(name: &str, extension: &str) -> String {
 }
 
 // ---- end Phase A ----
+
+// ---- Theme Library routes ----
+
+use crate::theme_library;
+
+/// Serve the preview HTML for a theme (written by preview_theme command).
+fn serve_theme_preview(slug: &str) -> Response<Full<Bytes>> {
+    let preview_file = theme_library::theme_library_root().join(slug).join("_preview.html");
+    match std::fs::read(&preview_file) {
+        Ok(bytes) => Response::builder()
+            .status(StatusCode::OK)
+            .header("Content-Type", "text/html; charset=utf-8")
+            .header("Access-Control-Allow-Origin", "*")
+            .body(Full::new(Bytes::from(bytes)))
+            .unwrap(),
+        Err(_) => not_found_response(&format!("theme preview not found: {}", slug)),
+    }
+}
+
+/// Serve a static asset from a theme folder (e.g., CSS, JS, images).
+fn serve_theme_asset(slug: &str, sub_path: &str) -> Response<Full<Bytes>> {
+    let theme_dir = theme_library::theme_library_root().join(slug);
+    if !theme_dir.is_dir() {
+        return not_found_response(&format!("theme not found: {}", slug));
+    }
+    serve_from_root(&theme_dir, sub_path, false)
+}
+
+// ---- end Theme Library routes ----
 
 fn serve_from_root(root: &PathBuf, rel: &str, inject_bridge: bool) -> Response<Full<Bytes>> {
     let rel = rel.split('?').next().unwrap_or(rel);
