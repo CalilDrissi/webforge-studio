@@ -483,7 +483,7 @@ window.addEventListener("DOMContentLoaded", () => {
   initConnectAgent();
 });
 
-// ---- Connect Agent tab (stub — Phase D fills in real MCP control) ----
+// ---- Connect Agent tab — real MCP control ----
 function initConnectAgent(): void {
   const startBtn = document.querySelector<HTMLButtonElement>("#mcp-start")!;
   const stopBtn = document.querySelector<HTMLButtonElement>("#mcp-stop")!;
@@ -493,19 +493,75 @@ function initConnectAgent(): void {
   const copyBtn = document.querySelector<HTMLButtonElement>("#mcp-copy")!;
   const activeEditorEl = document.querySelector<HTMLElement>("#mcp-active-editor")!;
 
-  startBtn.addEventListener("click", () => {
-    statusEl.textContent = "MCP server start: coming in Phase C/D (Rust-native MCP)";
-    statusEl.className = "status warning";
+  async function refreshStatus(): Promise<void> {
+    try {
+      const status = await invoke<{ running: boolean; port: number }>("mcp_status");
+      if (status.running) {
+        statusEl.textContent = `Running on port ${status.port}`;
+        statusEl.className = "status";
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        configEl.classList.remove("hidden");
+        snippetEl.textContent = JSON.stringify({
+          mcpServers: {
+            "webforge-studio": {
+              command: "webforge-studio",
+              args: ["mcp"],
+            },
+          },
+        }, null, 2);
+      } else {
+        statusEl.textContent = "Not running";
+        statusEl.className = "status";
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        configEl.classList.add("hidden");
+      }
+    } catch {
+      statusEl.textContent = "Status check failed";
+      statusEl.className = "status error";
+    }
+  }
+
+  startBtn.addEventListener("click", async () => {
+    try {
+      const port = await invoke<number>("start_mcp_server");
+      statusEl.textContent = `Running on port ${port}`;
+      statusEl.className = "status";
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      configEl.classList.remove("hidden");
+      snippetEl.textContent = JSON.stringify({
+        mcpServers: {
+          "webforge-studio": {
+            command: "webforge-studio",
+            args: ["mcp"],
+          },
+        },
+      }, null, 2);
+    } catch (e) {
+      statusEl.textContent = `Failed to start: ${e}`;
+      statusEl.className = "status error";
+    }
   });
-  stopBtn.addEventListener("click", () => {
-    statusEl.textContent = "Not running";
-    statusEl.className = "status";
+
+  stopBtn.addEventListener("click", async () => {
+    try {
+      await invoke("stop_mcp_server");
+      await refreshStatus();
+    } catch (e) {
+      statusEl.textContent = `Failed to stop: ${e}`;
+      statusEl.className = "status error";
+    }
   });
+
   copyBtn.addEventListener("click", () => {
     navigator.clipboard.writeText(snippetEl.textContent || "").then(() => {
       copyBtn.textContent = "Copied!";
       setTimeout(() => (copyBtn.textContent = "Copy"), 1200);
     });
   });
-  activeEditorEl.textContent = "No editor window open.";
+
+  activeEditorEl.textContent = "Open a workspace to connect the editor.";
+  refreshStatus();
 }

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
+use serde_json::json;
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_sql::{Builder as SqlBuilder, Migration, MigrationKind};
 use tokio::sync::RwLock;
@@ -9,6 +10,7 @@ mod ai_agent;
 mod converter;
 mod export;
 mod folder;
+pub mod mcp;
 mod server;
 mod site_io;
 mod theme_library;
@@ -16,6 +18,39 @@ mod workspace;
 
 use server::start_server;
 use site_io::{get_file_mtime, save_site, upload_site};
+
+use std::sync::atomic::{AtomicBool, AtomicU16, Ordering};
+
+/// MCP server state
+static MCP_RUNNING: AtomicBool = AtomicBool::new(false);
+static MCP_PORT: AtomicU16 = AtomicU16::new(0);
+
+#[tauri::command]
+fn start_mcp_server(app: tauri::AppHandle) -> Result<u16, String> {
+    if MCP_RUNNING.load(Ordering::SeqCst) {
+        return Ok(MCP_PORT.load(Ordering::SeqCst));
+    }
+    let port = mcp::start_mcp_server(app)?;
+    MCP_RUNNING.store(true, Ordering::SeqCst);
+    MCP_PORT.store(port, Ordering::SeqCst);
+    Ok(port)
+}
+
+#[tauri::command]
+fn stop_mcp_server() -> Result<(), String> {
+    mcp::stop_mcp_server()?;
+    MCP_RUNNING.store(false, Ordering::SeqCst);
+    MCP_PORT.store(0, Ordering::SeqCst);
+    Ok(())
+}
+
+#[tauri::command]
+fn mcp_status() -> serde_json::Value {
+    json!({
+        "running": MCP_RUNNING.load(Ordering::SeqCst),
+        "port": MCP_PORT.load(Ordering::SeqCst),
+    })
+}
 
 /// Shared map of site_id -> local folder path, used by both the embedded HTTP server
 /// (to resolve /site/<id>/... requests) and the open_site/register_site_folder commands.
@@ -266,7 +301,10 @@ pub fn run() {
             theme_library::delete_theme,
             theme_library::get_theme_path,
             theme_library::preview_theme,
-            theme_library::import_theme_zip
+            theme_library::import_theme_zip,
+            start_mcp_server,
+            stop_mcp_server,
+            mcp_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
